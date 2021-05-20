@@ -16,3 +16,6 @@ File list:
 `gcc -static main2.o ./libvector.a`  
 `./a.out`  
 As expected, the result is `z = [4 6]`  
+
+Or equivalently,  
+`gcc -static main2.o -L. -lvector`  
