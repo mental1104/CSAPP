@@ -52,3 +52,28 @@ free(0x560fff47e2a0)
 
 Notice that I intentionally annotated the `printf`. see [this](https://blog.csdn.net/baidu_30073577/article/details/89453567) to find the reason why.  
 
+
+### Exercise 7.13  
+
+A. 
+```zsh
+➜  ~ ar -t /usr/lib/x86_64-linux-gnu/libc.a | wc -l
+1740
+```  
+B. 
+```zsh
+➜  ~ touch test.c
+➜  ~ vim test.c
+➜  ~ gcc -Og -o a.out test.c
+➜  ~ gcc -Og -g -o b.out test.c
+➜  ~ sha256sum a.out b.out
+aa89cc84b4979bf558436a24c26925832a2a6f15086d2697d2cfb9e6bdf28fb7  a.out
+f423cfb6f244c93e004fcd43b99aee28cca0d941869c2335a71455ff2485ad4a  b.out
+```
+C.  
+```
+➜  ~ ldd /usr/bin/gcc
+	linux-vdso.so.1 (0x00007ffd4dcf7000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007eff351a9000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007eff353b3000)
+```
