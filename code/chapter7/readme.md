@@ -50,5 +50,5 @@ free(0x560fff47e2a0)
 `gcc -o intr int.c`  
 `LD_PRELOAD="./mymalloc.so" ./intr`  
 
-Notice that I intentionally annotated the `printf`. see [this]("https://blog.csdn.net/baidu_30073577/article/details/89453567") to find the reason why.  
+Notice that I intentionally annotated the `printf`. see [this](https://blog.csdn.net/baidu_30073577/article/details/89453567) to find the reason why.  
 
