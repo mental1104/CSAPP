@@ -1,5 +1,4 @@
 ## CSAPP 3e Solution
 
-This is only for myself, and I cannot guarantee it will work for you.  
++ ### Chapter 7: [Linking](./code/chapter7)  
 
-Help yourself.
