@@ -221,3 +221,199 @@ Up to now, `make test04` still will result in a infinite loop since we haven't i
 
 ## sigchld_handler
 
+In handler, it's always a good habit to teamporarily save errno into a local variable and set it back at the end of the function:
+```c
+void handler(int){
+    int olderr = errno;
+    ......
+    errno = olderr;
+    return;
+}
+```
+This handler is designed to let children process reaped by the parent process and to record their consequence how they exit the process:
+
+First up, we should wait for all children:
+```c
+void handler(int){
+    int olderr = errno;
+    ......
+    while((pid = waitpid(-1, &status, 0) > 0){
+        ......
+    }
+    errno = olderr;
+    return;
+}
+```
+
+we want them to return back No matter they're interrupted by keyboard or by stop signal, so the third argument should be `WNOHANG|WUNTRACED`.  
+
+Consequently, we want different consequence handled by different branch, for example, normal exit, apparently, should be handled differently against being interrupted by keyboard. Hence:  
+
+```c
+void handler(int){
+    int olderr = errno;
+    ......
+    while((pid = waitpid(-1, &status, 0) > 0){
+        if(WIFEXITED(status)){
+            ...
+        }else if(WIFSIGNALED(status)){
+            ...
+        }else if(WIFSTOPPED(status)){
+            ...
+        }
+    }
+    errno = olderr;
+    return;
+}
+```
+Two former branches need to finish the work -- deletejob(), and therefore they should be followed by blocking signal and recovery, and a print message if necessary. But the third one, which does not need to be deleted but stopped, just requires to change its running state, and of course it need blocking signal too.  
+
+And the content of `print` need several comparison and debug to get it right.  
+
+Note that the `printf()` statement is not async-signal-safe function. Strictly it should be replaced by `write()` alike.  
+
+Complete code: 
+
+```c
+void sigchld_handler(int sig) 
+{   
+    int olderr = errno;
+    
+    pid_t pid;
+    sigset_t mask_all, prev_one;
+    sigfillset(&mask_all);
+    int status;
+    while((pid = waitpid(-1, &status, WNOHANG|WUNTRACED))>0){
+        if(WIFEXITED(status)){
+            sigprocmask(SIG_BLOCK, &mask_all, &prev_one);
+            deletejob(jobs,pid);
+            sigprocmask(SIG_SETMASK, &prev_one, NULL);
+        }else if(WIFSIGNALED(status)){
+            sigprocmask(SIG_BLOCK, &mask_all, &prev_one);
+            printf("Job [%d] (%d) terminated by signal %d.\n", pid2jid(pid), pid, SIGINT);
+            deletejob(jobs,pid);
+            sigprocmask(SIG_SETMASK, &prev_one, NULL);
+        }else if(WIFSTOPPED(status)){
+            struct job_t* job = getjobpid(jobs, pid);
+            sigprocmask(SIG_BLOCK, &mask_all, &prev_one);
+            printf("Job [%d] (%d) stopped by signal %d.\n", pid2jid(pid), pid, SIGTSTP);
+            job->state = ST;
+            sigprocmask(SIG_SETMASK, &prev_one, NULL);
+        }
+    }
+    errno = olderr;
+    return;
+}
+```
+
+and now `make test04` works as expected.  
+
+## sigint_handler  
+
+Framework is easy:  
+```c
+void sigint_handler(int sig) 
+{
+    int olderr = errno;
+    ...
+    errno = olderr;
+    return;
+}
+```
+
+All we need to do is find the foreground process, and give that process and whose process group `SIGINT`, which is triggered by Ctrl+C.  
+
+So we can use the `kill()` function and pass it a negative value of that PID to complete this task.  
+
+```c
+void sigint_handler(int sig) 
+{
+    int olderr = errno;
+    pid_t pid = fgpid(jobs);
+    if(pid){
+        kill(-pid, SIGINT);
+    }
+    errno = olderr;
+    return;
+}
+```
+
+## sigtstp_handler  
+
+Much the same way. 
+
+```c
+void sigtstp_handler(int sig) 
+{
+    int olderr = errno;
+    pid_t pid = fgpid(jobs);
+    if(pid){
+        struct job_t* job = getjobpid(jobs,pid);
+        if(job->state == ST)
+            return;
+        else
+            kill(-pid, SIGTSTP);
+    }
+    errno = olderr;
+    return;
+}
+```
+
+In practice, I notice that in Linux Ctrl-Z is to make the process become a background process while it's still running. But the default behavior is to stop a specified process. 
+
+## do_fgbg
+
+This needs several comparision with `tshref`.
+
+Notice that job id is decoded by `"%num"`, PID `"num"`. 
+
+```c
+void do_bgfg(char **argv) 
+{
+    if(argv[1] == NULL){
+        printf("%s command requires PID or %%jobid argument.\n", argv[0]);
+        return;
+    }
+
+    int id;
+    struct job_t* job;
+
+    if(sscanf(argv[1],"%%%d",&id) > 0){
+        job = getjobjid(jobs, id);
+        if(job == NULL){
+            printf("%%%d No such job\n", id);
+            return;
+        }
+    }else if(sscanf(argv[1],"%d", &id) > 0){
+        job = getjobpid(jobs, id);
+        if(job == NULL){
+            printf("(%d): No such process\n", id);
+            return;
+        }
+    }else{
+        printf("%s: argument must be a PID or %%jobid.\n", argv[0]);
+        return;
+    }
+
+    kill(-(job->pid),SIGCONT);
+    if(!strcmp("bg", argv[0])){
+        printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
+        job->state = BG;
+    }else{
+        job->state = FG;
+        waitfg(job->pid);
+    }
+    return;
+}
+```
+
+Here is the comparison figures:
+
+![](./pic/res_1.png)
+![](./pic/res_2.png)
+![](./pic/res_3.png)
+![](./pic/res_4.png)
+![](./pic/res_5.png)
+![](./pic/res_6.png)
+![](./pic/res_7.png)
+![](./pic/res_8.png)
