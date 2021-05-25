@@ -166,7 +166,7 @@ void eval(char *cmdline)
 
 ## builtin_cmd  
 
-We may be inspirational if we look at the code provided by textbook:  
+It may be inspirational if we look at the code provided by textbook:  
 ![](./pic/2.png)
 
 So, all we need to do is to use standard `strcmp` to compare each string in the if-statement and then do something.  
