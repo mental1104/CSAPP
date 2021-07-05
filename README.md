@@ -7,6 +7,7 @@ Official Website: [CSAPP_3e](http://www.csapp.cs.cmu.edu/)
 Important [Code](./code/src)
 ---
 + ### Chapter 2: [Representing & Manipulating Information](./code/chapter2)
++ ### Chapter 6: [Memory Hireachy](./code/chapter6/)
 + ### Chapter 7: [Linking](./code/chapter7)  
 + ### Chapter 8: [Exceptional Control Flow](./code/chapter8)
 + ### -> Lab 6: [Shell Lab](./lab/shelllab)
