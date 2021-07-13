@@ -6,3 +6,7 @@
 ### 11.3 [dd2hex.c](./dd2hex.c)  
 > ✗ ./a.out 255.255.255.255  
 > 0xffffffff
+
+### 11.4 [hostinfo.c](./hostinfo.c)
+> ✗ ./a.out localhost
+> 127.0.0.1
