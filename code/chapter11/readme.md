@@ -115,3 +115,6 @@ Serve dynamic content:
 
 Serve static content(picture):  
 ![](./open_pic.png)  
+
+Telnet:  
+![](./telnet.png)
