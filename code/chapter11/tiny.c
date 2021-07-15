@@ -8,6 +8,9 @@ void serve_static(int fd, char *filename, int filesize);
 void get_filetype(char *filename, char *filetype);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);  
+void echo(int connfd);
+void sigchild_handler(int sig);
+
 
 int main(int argc, char **argv){
     int listenfd, connfd;
@@ -20,6 +23,9 @@ int main(int argc, char **argv){
         exit(1);
     }
 
+    if(Signal(SIGCHLD, sigchild_handler) == SIG_ERR)
+        unix_error("signal child handler error\n");
+
     listenfd = Open_listenfd(argv[1]);
     while(1){
         clientlen = sizeof(clientaddr);
@@ -27,8 +33,18 @@ int main(int argc, char **argv){
         Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
         printf("Accepted connection from (%s %s)\n", hostname, port);
         doit(connfd);
+        //echo(connfd);
         Close(connfd);
     }
+}
+
+void sigchild_handler(int sig){
+    int old_errno = errno;
+    int status;
+    pid_t pid;
+    while((pid = waitpid(-1, &status, WNOHANG)) > 0)
+        ;
+    errno = old_errno;
 }
 
 void doit(int fd){
@@ -140,10 +156,13 @@ void serve_static(int fd, char *filename, int filesize){
     printf("%s", buf);
 
     srcfd = Open(filename, O_RDONLY, 0);
-    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    //srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    srcp = (char *)Malloc(filesize);
+    Rio_readn(srcfd, srcp, filesize);
     Close(srcfd);
     Rio_writen(fd, srcp, filesize);
-    Munmap(srcp, filesize);
+    //Munmap(srcp, filesize);
+    free(srcp);
 }
 
 void get_filetype(char *filename, char *filetype){
@@ -155,6 +174,8 @@ void get_filetype(char *filename, char *filetype){
         strcpy(filetype, "image/png");
     else if (strstr(filename, ".jpg"))
         strcpy(filetype, "image/jpeg");
+    else if (strstr(filename, ".mpeg"))
+        strcpy(filetype, "video/mpeg");
     else
         strcpy(filetype, "text/plain");
 }
@@ -172,5 +193,16 @@ void serve_dynamic(int fd, char *filename, char *cgiargs){
         Dup2(fd, STDOUT_FILENO);
         Execve(filename, emptylist, environ);
     }
-    Wait(NULL);
+}
+
+void echo(int connfd){
+    size_t n;
+    char buf[MAXLINE];
+    rio_t rio;
+    Rio_readinitb(&rio, connfd);
+    while((n = Rio_readlineb(&rio, buf, MAXLINE))!=0){
+        if(strcmp(buf, "\r\n") == 0)//detect empty line
+            break;
+        Rio_writen(connfd, buf, n);
+    }
 }

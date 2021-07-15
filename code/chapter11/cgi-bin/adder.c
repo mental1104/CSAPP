@@ -8,10 +8,12 @@ int main(void){
     if((buf = getenv("QUERY_STRING"))!=NULL){
         p = strchr(buf, '&');
         *p = '\0';
-        strcpy(arg1, buf);
-        strcpy(arg2, p+1);
-        n1 = atoi(arg1);
-        n2 = atoi(arg2);
+        //strcpy(arg1, buf);
+        //strcpy(arg2, p+1);
+        //n1 = atoi(arg1);
+        //n2 = atoi(arg2);
+        sscanf(buf, "first=%d", &n1);
+        sscanf(p+1, "second=%d", &n2);
     }
 
     sprintf(content, "QUERY_STRING=%s", buf);
