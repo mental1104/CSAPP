@@ -60,5 +60,15 @@ Using semaphore:
 OK cnt=2000000
 ```
 
+### 5. Prethreading  
+
+Relative file: 
+
++ [echo_cnt.c](./echo_cnt.c)
++ [echoservert-pre.c](./echoservert-pre.c)
++ [sbuf.c](./sbuf.c)
++ [sbuf.h](./sbuf.h)
+
+However, there's a multiple definition problem that haunts me...
 
 
