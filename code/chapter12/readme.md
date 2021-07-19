@@ -71,4 +71,16 @@ Relative file:
 
 However, there's a multiple definition problem that haunts me...
 
+### 6. psum with mutex, array and local variable
+
++ [psum.c](./psum.c)  
+
+Usage: `gcc -o psum psum.c -O0 -pthread`  
+
+result:   
+36.541364 399.397656 1494.803441 2620.637289 2713.644104 2733.520022   
+4.797576 9.801893 19.810466 29.753811 22.701177 14.509155   
+4.855713 4.924726 4.985449 5.245657 5.460248 5.542412    
+
+Conclusion: local variable > memory reference > mutex lock  
 
