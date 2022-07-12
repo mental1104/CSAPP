@@ -57,7 +57,7 @@ void add_client(int connfd, pool *p){
     int i;
     p->nready--;
     for(i = 0; i<FD_SETSIZE; i++)
-        if(p->clientfd[i] < 0){
+        if(p->clientfd[i] < 0){ //Find empty slot
             p->clientfd[i] = connfd;
             Rio_readinitb(&p->clientrio[i], connfd);
 
